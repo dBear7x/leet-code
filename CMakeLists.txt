@@ -16,21 +16,36 @@ FetchContent_MakeAvailable(googletest)
 # 2. 包含 common 目录，方便引用 TreeNode/ListNode 定义
 include_directories(${CMAKE_SOURCE_DIR}/common)
 
-# 3. 核心逻辑：扫描 src 文件夹
-file(GLOB PROBLEM_SOURCES "src/*.cpp")
+# 3. 核心逻辑：将 `problems` 下的每个子文件夹视为一个题目目录
+#    每个题目目录（例如 `problems/0001_two_sum`）中的 .cpp 文件作为该题目的测试源，
+#    .hpp 放在同一目录作为实现头文件。
 
-foreach(source_file ${PROBLEM_SOURCES})
-    # 获取文件名作为 target 名字 (例如 0001_two_sum)
-    get_filename_component(target_name ${source_file} NAME_WE)
+# 搜索顶级子目录
+file(GLOB PROBLEM_DIRS RELATIVE ${CMAKE_SOURCE_DIR} "problems/*")
 
-    # 为该文件创建独立的可执行程序
-    add_executable(${target_name} ${source_file})
+foreach(subdir ${PROBLEM_DIRS})
+  if(IS_DIRECTORY "${CMAKE_SOURCE_DIR}/${subdir}")
+    # 在子目录下查找 .cpp 源文件（通常是测试文件）
+    file(GLOB PROBLEM_SOURCES "${CMAKE_SOURCE_DIR}/${subdir}/*.cpp")
 
-    # 链接 gtest_main (它包含了 main 函数，不需要你手写 main)
-    target_link_libraries(${target_name} GTest::gtest_main)
-    
-    # (可选) 如果需要多线程，通常加上这个
-    target_link_libraries(${target_name} Threads::Threads)
-    
-    message(STATUS "Found Problem: ${target_name}")
+    if(PROBLEM_SOURCES)
+      # 使用子目录名作为 target 名称（例如 0001_two_sum）
+      get_filename_component(target_name ${subdir} NAME)
+
+      add_executable(${target_name} ${PROBLEM_SOURCES})
+
+      # 包含公共头和题目目录以便找到 .hpp
+      target_include_directories(${target_name} PRIVATE
+        ${CMAKE_SOURCE_DIR}/common
+        ${CMAKE_SOURCE_DIR}/${subdir}
+      )
+
+      # 链接 GTest main 来运行测试文件
+      target_link_libraries(${target_name} PRIVATE GTest::gtest_main)
+
+      message(STATUS "Found Problem: ${target_name} (from ${subdir})")
+    else()
+      message(STATUS "Skipping ${subdir}: no .cpp sources found")
+    endif()
+  endif()
 endforeach()
