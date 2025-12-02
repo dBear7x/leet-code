@@ -3,13 +3,9 @@
 
 using namespace std;
 
-// ======================================================
-// 测试区域 (本地调试与验证)
-// ======================================================
-
 TEST(TwoSum, Example1)
 {
-    Solution sol; // 不需要 namespace，因为每个文件是独立 exe，互不干扰
+    Solution sol;
     vector<int> nums = {2, 7, 11, 15};
     int target = 9;
     vector<int> expected = {0, 1};
